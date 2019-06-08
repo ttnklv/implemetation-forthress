@@ -139,3 +139,26 @@ native 'r>', from_r
 native "r@", r_fetch
   push qword [rstack]
   jmp next
+
+; Управление выполнением
+
+native 'docol', docol
+  sub rstack, 8
+  mov [rstack], pc
+  add w, 8
+  mov pc, w
+  jmp next
+
+native 'branch', branch
+    mov pc, [pc]
+    jmp next
+
+native 'branchifz', branchifz
+  pop rax
+  test rax, rax
+  jnz .skip
+  mov pc, [pc]
+  jmp next
+  .skip:
+    add pc, 8
+    jmp next
