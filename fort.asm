@@ -21,6 +21,8 @@ section .bss
 %include 'input.inc'
 %include 'macro.inc'
 %include 'util.inc'
+%include 'words.inc'
+%include 'colon.inc'
 
 const here, [here]
 
