@@ -51,3 +51,23 @@ native '<', less
   movzx rax, al
   push rax
   jmp next
+
+;Стековые комбинаторы
+
+; ( a -- )
+native 'drop', drop
+  add rsp, 8
+  jmp next
+
+; ( a b -- b a )
+native 'swap', swap
+    pop rdx
+    pop rax
+    push rdx
+    push rax
+    jmp next
+
+; ( a -- a a )
+native 'dup', dup
+  push qword [rsp]
+  jmp next
