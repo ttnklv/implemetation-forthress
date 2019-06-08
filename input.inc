@@ -7,94 +7,93 @@ section .data
 section .text
 
 string_length:
-    xor rax, rax ; обнуляем счетчик
+    xor rax, rax 
     .loop:
-      cmp  byte[rdi + rax], 0 ; вычисляется адрес + сравнивается с 0 + устанавливаются флаги
-      je   .exit ;смотрим в регистр состояния во флаг equals, если 0 - заканчиваем цикл
-      inc  rax ;если 1 - учитываем символ и продолжаем цикл
+      cmp  byte[rdi + rax], 0 
+      je   .exit  
+      inc  rax 
       jmp  .loop
     .exit:
     ret
 
 print_string:
-    call string_length ; помещаем в rax длину строки
-    ; готови регистры для системного вызова sys_write
-    mov rsi, rdi ; откуда выводить (передаваемая ссылка)
-    mov rdi, 1 ; куда выводить (stdout)
-    mov rdx, rax ; сколько выводить
-    mov rax, 1 ; код sys_write
+    call string_length 
+    mov rsi, rdi 
+    mov rdi, 1 
+    mov rdx, rax 
+    mov rax, 1 
     syscall
     ret
 
 print_char:
-    push rdi ; сохраняем символ на стэк
-    mov rsi, rsp ; откуда выводить (адрес вершины стэка)
-    mov rdi, 1 ; куда выводить (stdout)
-    mov rdx, 1 ; сколько выводить
-    mov rax, 1 ; код sys_write
+    push rdi 
+    mov rsi, rsp 
+    mov rdi, 1 
+    mov rdx, 1 
+    mov rax, 1 
     syscall
-    pop rdi ; забираем символ со стэка
+    pop rdi 
     ret
 
 print_newline:
-    mov rdi, 10 ; передаем как параметр, код конца строки
-    jmp print_char ; выводим его на экран
+    mov rdi, 10 
+    jmp print_char 
 
 string_copy:
     call string_length
-    mov  rcx, rax ; помещаем длину строки в rcx
-    inc  rcx ; увеличиваем, чтобы дойти до 0
-    xchg rsi, rdi ; меняем местами (в rdi теперь ссылка на место копирования)
-    mov  byte[rdi + rax], 0 ; нультермируем место, куда будем копировать строку
-    rep  movsb ; повторяем копирование(побайтово), используя rcx, как счетчик
+    mov  rcx, rax 
+    inc  rcx 
+    xchg rsi, rdi 
+    mov  byte[rdi + rax], 0 
+    rep  movsb 
     ret
 
 print_uint:
-    push rbp ; сохраняем зачение rbp, положив его на стэк
-    mov  rbp, rsp ; сохраняем в rbp адрес вершины стэка
-    mov  rax, rdi ; сохраняем переданное число в "аккумулятор"
-    mov  rdi, 10 ; заносим делитель (10) в rdi
-    sub  rsp, BUFFER_SIZE ; выделяем буфер в стэке
-    dec  rbp ; выделяем место под 0 на вершине стэка (нультермируем для вывода)
-    mov  byte[rbp], 0 ; записываем 0 на вершину стэка
+    push rbp
+    mov  rbp, rsp 
+    mov  rax, rdi
+    mov  rdi, 10 
+    sub  rsp, BUFFER_SIZE 
+    dec  rbp 
+    mov  byte[rbp], 0 
       .loop:
-        dec  rbp ; сдвигаем метку для новой цифры
-        xor  rdx, rdx ; обнуление rdx
-        div  rdi ; целочисленное деление на 10 с записью в остатка в rdx
-        add  rdx, '0' ; остаток + код первой цифры в ASCII
-        mov  byte[rbp], dl ; сохраняем 1 байт (цифру) на стэк
-        test rax, rax ; устанавливает флаги (ZF = 0, если rax = 0)
-        jnz  .loop ; если rax !=0, продолжает цикл
-    mov rdi, rbp ; помещаем аргумент для print_string (метку на стэке)
-    call print_string ; выводим число в stdout
-    add rsp, BUFFER_SIZE ; освобождаем буфер
-    pop rbp ; восстанавливаем значение rbp
+        dec  rbp 
+        xor  rdx, rdx 
+        div  rdi 
+        add  rdx, '0' 
+        mov  byte[rbp], dl 
+        test rax, rax 
+        jnz  .loop 
+    mov rdi, rbp 
+    call print_string 
+    add rsp, BUFFER_SIZE 
+    pop rbp 
     ret
 
 print_int:
-  test rdi, rdi ; устанавливаем флаги
-  jns  .unsigned ; переход, если беззнаковое
-  push rdi ; сохраняем перед вызовом функции
-  mov  rdi, '-'  ; помещаем аргумент
-  call print_char ; выводим знак
-  pop  rdi ; восстанавливаем значение rdi
-  neg  rdi ; делаем число положительным (not + inc)
+  test rdi, rdi 
+  jns  .unsigned 
+  push rdi 
+  mov  rdi, '-'  
+  call print_char 
+  pop  rdi 
+  neg  rdi 
   .unsigned:
-  jmp  print_uint ; обычный вывод беззнакового числа
+  jmp  print_uint 
 
 string_equals:
   call string_length
-  mov  rcx, rax ; сохраняем длину первой строки в rcx
-  xchg rdi, rsi ; помещаем в rdi адрес второй строки
+  mov  rcx, rax 
+  xchg rdi, rsi 
   call string_length
-  cmp  rax, rcx ; сравнение длин и установка флага
-  jne  .not_equals ; если флаг не равен 0 (не равны), возврат 0
-  repe cmpsb ; repe - повторять пока равны; cmpsb - устанавливает флаги
-  jne  .not_equals ; если перебор прекратился, флаг ZF будет установлен
-  mov rax, 1 ; возврат 1
+  cmp  rax, rcx 
+  jne  .not_equals 
+  repe cmpsb 
+  jne  .not_equals 
+  mov rax, 1 
   ret
   .not_equals:
-    mov rax, 0 ; возврат 0
+    mov rax, 0 
     ret
 
 read_char:
@@ -167,37 +166,37 @@ read_word:
 
 parse_uint:
   call string_length
-  mov rcx, rax ; сохраняем в rcx длину строки
-  mov rsi, rdi ; сохраняем в rsi адрес строки
-  xor rdx, rdx ; обнуление (для хранения колличества цифр)
-  xor rax, rax ; обнуление (для хранения полученного числа)
+  mov rcx, rax 
+  mov rsi, rdi 
+  xor rdx, rdx 
+  xor rax, rax 
   .pars:
-    xor  rdi, rdi ; обнуление
-    mov  dil, byte[rsi + rdx] ; берем следующий символ по (адрес + сдвиг)
-    cmp  dil, '0' ; сравниваем с 0 и устанавливаем флаги
-    jb   .exit ; если код символа меньше 0, заканчиваем перебор
-    cmp  dil, '9' ; сравниваем с 9 и устанавливаем флаги
-    ja   .exit ; если код символа больше 9, заканчиваем перебор
-    sub  dil, '0' ; вычитаем код 0, чтобы получить число от 0 до 9
-    imul rax, 10 ; умножаем на 10
-    add  rax, rdi ; прибавляем полученную цифру
-    inc  rdx ; считаем эту цифру
-    dec  rcx ; уменьшаем длину строки + устанавливаем флаги
-    jnz  .pars ; если строка не кончилась, тогда всё заново
+    xor  rdi, rdi 
+    mov  dil, byte[rsi + rdx] 
+    cmp  dil, '0' 
+    jb   .exit 
+    cmp  dil, '9' 
+    ja   .exit 
+    sub  dil, '0'
+    imul rax, 10 
+    add  rax, rdi 
+    inc  rdx 
+    dec  rcx 
+    jnz  .pars 
   .exit:
   ret
 
 parse_int:
-  cmp byte[rdi], '-' ; проверяем на наличие минуса (устанавливаются флаги)
-  je .minus ; если есть, обрабатываем его
-  jmp parse_uint ; если нет, работаем как с обычной строкой
+  cmp byte[rdi], '-' 
+  je .minus 
+  jmp parse_uint 
   .minus:
-    inc rdi ; пропускаем минус
-    call parse_uint ; обрабатываем обычную строку
-    test rdx, rdx ; устанавливаем флаги
-    jz .null ; если после минуса нет цифр, выходим
-    neg rax ; иначе делаем число отрицательным
-    inc rdx ; учитываем минус (в колличестве знаков)
+    inc rdi 
+    call parse_uint 
+    test rdx, rdx 
+    jz .null 
+    neg rax 
+    inc rdx 
     ret
   .null:
     xor eax, eax ; обнуляем ответ

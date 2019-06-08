@@ -27,7 +27,6 @@ colon '>', greater
   dq xt_less
   dq xt_exit
 
-; Слова для создания собственных слов 
 colon ':', colon
   .restart:
   dq xt_buffer
