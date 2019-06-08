@@ -1,0 +1,1 @@
+cat branches.fort - | bin/fort
